@@ -1,0 +1,7 @@
+{
+  "name": "education",
+  "description": "?",
+  "repository": "https://github.com/HoiBoiPr0xies/Alu",
+  "keywords": ["school", "math", "learning"],
+  "image": "heroku/nodejs"
+}
