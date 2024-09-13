@@ -11,7 +11,11 @@ module.exports = {
   },
   rules: {
     "no-unused-vars": "error",
+    "no-undef": "off",
+    "prefer-const": "error",
+    "no-case-declarations": "off",
   },
+  ignorePatterns: ["env.d.ts"],
   overrides: [
     {
       files: ["*.astro"],
@@ -20,6 +24,15 @@ module.exports = {
         parser: "@typescript-eslint/parser",
         extraFileExtensions: [".astro"],
       },
+    },
+    {
+      files: ["*.ts", "*.tsx"],
+      parser: "@typescript-eslint/parser",
+      parserOptions: {
+        project: "./tsconfig.json",
+      },
+      plugins: ["@typescript-eslint"],
+      extends: ["plugin:@typescript-eslint/recommended"],
     },
     {
       // Define the configuration for `<script>` tag.

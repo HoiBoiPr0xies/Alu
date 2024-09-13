@@ -1,50 +1,25 @@
-// @ts-ignore
-// For some reason, VSCode can't find the bare-mux package. It exists and compiling works, but vscode throws a fit.
-import { SetTransport, registerRemoteListener } from "@mercuryworkshop/bare-mux";
-// @ts-check
-declare global {
-  interface Window {
-    __uv$config: {
-      prefix: string;
-      encodeUrl: (url: string) => string;
-      decodeUrl: (url: string) => string;
-    };
-    loadFormContent: Function | null;
-    loadSelectedTransport: Function | null;
-  }
-}
+import { BareMuxConnection } from "@mercuryworkshop/bare-mux";
 
-type transportConfig =
-  | {
-      wisp: string;
-      wasm?: string;
-    }
-  | string;
-
-export const wispURLDefault =
-  (location.protocol === "https:" ? "wss://" : "ws://") + location.host + "/wisp/";
+type transportConfig = {
+  wisp: string;
+};
 export default class TransportManager {
-  private transport = "EpxMod.EpoxyClient";
+  private transport: Alu.Key;
+  connection: BareMuxConnection;
 
-  constructor(transport?: string) {
+  constructor(transport?: Alu.Key) {
+    this.connection = new BareMuxConnection("/baremux/worker.js");
     if (transport) {
       this.transport = transport;
     }
-    if (localStorage.getItem("alu__selectedTransport") != null && !transport) {
-      this.transport = JSON.parse(localStorage.getItem("alu__selectedTransport")!).value;
-    }
-    if (localStorage.getItem("alu__selectedTransport") == null) {
-      // Set the default transport for the next reload.
-      localStorage.setItem("alu__selectedTransport", JSON.stringify({ value: this.transport }));
-    }
+    this.transport = Alu.store.get("transport");
   }
-  updateTransport() {
+  async updateTransport() {
     try {
-      this.setTransport(JSON.parse(localStorage.getItem("alu__selectedTransport")!).value);
-      console.log(this.transport);
-    } catch {
-      console.log("Failed to update transport! Falling back to old transport.");
-      this.setTransport(this.transport);
+      const selectedTransport = Alu.store.get("transport");
+      await this.setTransport(selectedTransport);
+    } catch (err) {
+      throw new Error("Failed to update transport! Try reloading. \nError: " + err);
     }
   }
 
@@ -52,81 +27,32 @@ export default class TransportManager {
     return this.transport;
   }
 
-  setTransport(transport: string, wispURL = wispURLDefault) {
+  async setTransport(transport: Alu.Key, wispURL: string = Alu.store.get("wisp").value) {
     this.transport = transport;
-    let transportConfig: transportConfig = { wisp: wispURL };
+    const transportConfig: transportConfig = { wisp: wispURL };
 
-    if (this.transport == "BareMod.BareClient") {
-      transportConfig = localStorage.getItem("alu__bareUrl") || window.location.origin + "/bare/";
+    if (this.transport.value == "/baremod/index.mjs") {
+      return await this.connection.setTransport(transport.value.toString(), [Alu.store.get("bareUrl").value]);
     }
 
-    SetTransport(this.transport, transportConfig);
+    await this.connection.setTransport(transport.value.toString(), [transportConfig]);
   }
 }
 
 export const TransportMgr = new TransportManager();
 
-export async function registerSW() {
-  navigator.serviceWorker.ready.then(async (sw) => {
-    await registerRemoteListener(sw.active!);
-  });
-  return new Promise(async (resolve) => {
-    await navigator.serviceWorker.register("/sw.js").then((registration) => {
-      registration.update().then(() => {
-        console.log("Registered SW!");
-        resolve(null);
-      });
-    });
-  });
-}
-
 export async function initTransport() {
-  await registerRemoteListener(navigator.serviceWorker.controller!);
-  TransportMgr.setTransport(
-    TransportMgr.getTransport(),
-    localStorage.getItem("alu__wispUrl") || wispURLDefault
-  );
+  await TransportMgr.setTransport(TransportMgr.getTransport(), Alu.store.get("wisp").value);
 }
 
-export async function loadSelectedTransportScript(): Promise<void> {
-  return new Promise((resolve) => {
-    let selectedTransport = localStorage.getItem("alu__selectedTransport");
-    if (!selectedTransport) {
-      localStorage.setItem("alu__selectedTransport", JSON.stringify({ value: "uv" }));
-      return;
-    }
-    let transport = JSON.parse(selectedTransport).value;
-    console.log(`Loading script for ${transport}`);
-    let script;
-    switch (transport) {
-      case "EpxMod.EpoxyClient": {
-        script = document.createElement("script");
-        script.src = "/epoxy/index.js";
-        script.defer = true;
-        break;
-      }
-      case "CurlMod.LibcurlClient": {
-        script = document.createElement("script");
-        script.src = "/libcurl/index.js";
-        script.defer = true;
-        break;
-      }
-      case "BareMod.BareClient": {
-        script = document.createElement("script");
-        script.src = "/bare_transport.js";
-        script.defer = true;
-        break;
-      }
-      default: {
-        script = document.createElement("script");
-        script.src = "/epoxy/index.js";
-        script.defer = true;
-        break;
-      }
-    }
-    document.body.appendChild(script);
-    script.onload = () => {
-      resolve();
-    };
-  });
+export async function registerAndUpdateSW(): Promise<void> {
+  try {
+    const reg = await navigator.serviceWorker.register("/sw.js", {
+      updateViaCache: "none",
+    });
+    console.log("Service worker registered!");
+    await reg.update();
+  } catch (err) {
+    console.error("Service worker registration failed: ", err);
+  }
 }

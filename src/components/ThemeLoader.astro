@@ -1,19 +1,38 @@
 <script>
-  function switchTheme() {
-    let currentTheme = localStorage.getItem("alu__selectedTheme");
+  import IDBManager from "@components/ts/IDBManager";
 
-    if (currentTheme) {
-      document.documentElement.setAttribute(
-        "data-theme",
-        JSON.parse(currentTheme).value.toLowerCase()
-      );
-      let footer = document.getElementById("footer");
-      if (footer) {
-        footer.dataset.theme = JSON.parse(currentTheme).value.toLowerCase();
-      }
-    }
+  function switchTheme() {
+    const currentTheme = Alu.store.get("theme");
+    document.documentElement.setAttribute("data-theme", currentTheme.value);
   }
+
   switchTheme();
 
   document.addEventListener("astro:after-swap", switchTheme);
+
+  const idb = IDBManager.loadIDB("AluDB", 1);
+
+  idb.onsuccess = () => {
+    const store = IDBManager.GetStore("InstalledExtensions", "readonly");
+    store.getAll().onsuccess = (event) => {
+      const result = (event.target as IDBRequest).result;
+      if (result) {
+        result.forEach((extension: ExtensionMetadata) => {
+          if (extension.type === "theme" && extension.themeName) {
+            // Load theme CSS
+            loadStyleFromAtob(atob(extension.scriptCopy!));
+
+            document.addEventListener("astro:after-swap", () => {
+              loadStyleFromAtob(atob(extension.scriptCopy!));
+            });
+          }
+        });
+      }
+    };
+  };
+  function loadStyleFromAtob(style: string) {
+    const styleEl = document.createElement("style");
+    styleEl.textContent = style;
+    document.head.appendChild(styleEl);
+  }
 </script>

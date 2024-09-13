@@ -22,46 +22,61 @@ const { title, optionalPreloads } = Astro.props;
 <!doctype html>
 <html lang="en">
   <head>
+    <link href="/varela-round.css" rel="stylesheet" />
     <ThemeLoader transition:persist />
     <CloakLoader transition:persist />
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width" />
     <meta name="title" content="Alu" />
-    <meta
-      name="description"
-      content="Alu is a sleek web proxy supporting multiple standards of communication, and wide levels of customization."
-    />
+    <meta name="author" content="Titanium Network">
+    <meta name="description" content="Alu is a sleek web proxy supporting multiple standards of communication, and wide levels of customization." />
     <meta property="og:type" content="website" />
     <meta property="og:url" content="https://aluu.xyz" />
     <meta property="og:title" content="Alu" />
-    <meta
-      property="og:description"
-      content="Alu is a sleek web proxy supporting multiple standards of communication, and wide levels of customization."
-    />
-    <meta property="og:image" content="/logo.png" />
+    <meta property="og:description" content="Alu is a sleek web proxy supporting multiple standards of communication, and wide levels of customization." />
+    <meta property="og:image" content="/favicon.svg" />
     <meta property="twitter:card" content="summary_large_image" />
     <meta property="twitter:url" content="https://aluu.xyz" />
     <meta property="twitter:title" content="Alu" />
-    <meta
-      property="twitter:description"
-      content="Alu is a sleek web proxy supporting multiple standards of communication, and wide levels of customization."
-    />
-    <meta property="twitter:image" content="/logo.png" />
+    <meta property="twitter:description" content="Alu is a sleek web proxy supporting multiple standards of communication, and wide levels of customization." />
+    <meta property="twitter:image" content="/favicon.svg" />
+    <link rel="canonical" href={Astro.url.href} />
     <link rel="sitemap" href="/sitemap-index.xml" />
-    <link href="/varela-round.css" rel="stylesheet" as="style" />
+    <link rel="stylesheet" href="https://site-assets.fontawesome.com/releases/v6.6.0/css/all.css" />
     {
       optionalPreloads?.map((item) => {
         return <link rel="preload" href={item.href} as={item.as} />;
       })
     }
-    <script src="https://www.googletagmanager.com/gtag/js?id=G-P1JX4G9KSF" is:inline></script>
-    <script is:inline>
+    <script src="https://www.googletagmanager.com/gtag/js?id=G-P1JX4G9KSF" defer is:inline></script>
+    <script is:inline defer>
       window.dataLayer = window.dataLayer || [];
-      function gtag(){dataLayer.push(arguments);}
-      gtag('js', new Date());
-    
-      gtag('config', 'G-P1JX4G9KSF');
+      function gtag() {
+        window.dataLayer.push(arguments);
+      }
+      gtag("js", new Date());
+      gtag("config", "G-P1JX4G9KSF");
     </script>
+    <script>
+      import instantiateAlu from "@components/ts/Alu";
+      import IDBManager from "@components/ts/IDBManager";
+
+      instantiateAlu();
+      
+      if (!window.idb) {
+        const db = IDBManager.loadIDB("AluDB", 1);
+        db.onupgradeneeded = () => {
+          window.idb = db.result;
+          IDBManager.SetIDB(window.idb);
+          IDBManager.CreateStore("InstalledExtensions", { keyPath: "slug" });
+        };
+        db.onsuccess = () => {
+          window.idb = db.result;
+          IDBManager.SetIDB(window.idb);
+        };
+      }
+    </script>
+    <script src="@components/ts/AluStore.ts"></script>
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
     <ViewTransitions />
@@ -71,19 +86,10 @@ const { title, optionalPreloads } = Astro.props;
     <Header />
     <slot transition:animate={"fade"} />
     <script src="/uv/uv.bundle.js" is:inline transition:persist></script>
-    <script src="/uv/uv.config.js" is:inline transition:persist></script>
+    <script src="/uv.config.js" is:inline transition:persist></script>
     <WelcomeLogging />
     <Footer />
     <style is:global>
-      :root {
-        --background-color: #211d29;
-        --background-highlight: #35314a;
-        --accent-color: #624978;
-        --accent-color-brighter: #543d65;
-        --text-color: #fff;
-        --text-color-accent: #c7c7c7;
-        --dropdown-background-color: #262539;
-      }
       * {
         box-sizing: border-box;
       }
@@ -92,44 +98,62 @@ const { title, optionalPreloads } = Astro.props;
         color: var(--text-color);
       }
 
-      [data-theme="mocha"] {
-        /* Catppucin Mocha theme */
-        --background-color: #1e1e2e;
-        --background-highlight: #45475a;
-        --accent-color: #181825;
-        --accent-color-brighter: #242539;
-        --text-color: #cdd6f4;
-        --text-color-accent: #bac2de;
-        --dropdown-background-color: #32324e;
+      h1,
+      h2,
+      h3,
+      h4,
+      h5,
+      h6,
+      p,
+      span {
+        color: var(--text-color);
       }
 
-      [data-theme="macchiato"] {
-        /* Catppuccin Macchiato Theme */
-        --background-color: #24273a;
-        --background-highlight: #494d64;
-        --accent-color: #1e2030;
-        --accent-color-brighter: #2a2d42;
-        --text-color: #cad3f5;
-        --text-color-accent: #b8c0e0;
-        --dropdown-background-color: #323550;
+      button, input {
+        font-family: "Varela Round", sans-serif;
       }
 
-      [data-theme="rose_pine"] {
-        /* Rosé Pine Theme */
-        --background-color: #191724;
-        --background-highlight: #1f1d2e;
-        --accent-color: #26233a;
-        --accent-color-brighter: #2e2b4a;
-        --text-color: #e0def4;
-        --text-color-accent: #c7c5e0;
-        --dropdown-background-color: #1f1d2e;
+      main {
+        width: 90%;
+        margin: 0 auto;
+      }
+
+      .url-input-form {
+        border: none;
+        padding: 0;
+        margin-bottom: 15px;
+      }
+
+      .url-input.search-results {
+        border-bottom-left-radius: 0;
+        border-bottom-right-radius: 0;
+        border-bottom: 0;
+      }
+
+      .url-input::placeholder {
+        color: var(--text-color-accent);
+      }
+
+      .url-input {
+        display: block;
+        background: transparent url(/img/search.svg) no-repeat 1rem center;
+        background-color: var(--dropdown-background-color);
+        color: var(--text-color);
+        border: 2px solid var(--text-color);
+        padding: 1rem;
+        border-radius: 10px;
+        width: 100%;
+        text-align: center;
+        transition: 0.25s ease-in-out;
+        outline: none;
+        font-size: 16px;
       }
 
       .skip-to-main-content-link {
         position: absolute;
         top: 10px;
         left: 15px;
-        z-index: 999;
+        z-index: 1000;
         padding: 0.75em;
         padding-inline: 20px;
         background-color: var(--background-highlight);
@@ -147,21 +171,15 @@ const { title, optionalPreloads } = Astro.props;
         pointer-events: all;
       }
 
-      body,
-      html {
-        margin: 0;
-        padding: 0;
-        height: 100%;
-        font-family: "Varela Round", sans-serif;
-      }
-
       body {
         background-color: var(--background-color);
         max-width: 100vw;
-        margin: 0;
         display: flex;
         flex-direction: column;
         min-height: 100vh;
+        margin: 0;
+        padding: 0;
+        font-family: "Varela Round", sans-serif;
       }
       body > * {
         opacity: 1;
@@ -170,7 +188,8 @@ const { title, optionalPreloads } = Astro.props;
         color: var(--text-color);
         text-align: center;
         font-weight: 400;
-        font-size: 40px;
+        font-size: 2.5rem;
+        margin-bottom: 5px;
       }
       .title-desc {
         color: var(--text-color);
@@ -210,7 +229,7 @@ const { title, optionalPreloads } = Astro.props;
         top: 0;
         left: 0;
         width: 100vw;
-        z-index: 100;
+        z-index: 1000;
         transition: opacity 250ms ease-in-out;
         pointer-events: none;
         opacity: 0;
@@ -248,7 +267,6 @@ const { title, optionalPreloads } = Astro.props;
       }
 
       .nav-container > img {
-        height: 32px;
         cursor: pointer;
         transition: 250ms ease-in-out;
       }
@@ -268,11 +286,58 @@ const { title, optionalPreloads } = Astro.props;
         transition: 0.1s ease-in-out;
       }
       .astro-input::placeholder {
-        color: var(--text-color);
+        color: var(--text-color-accent);
       }
       .astro-input:focus {
         outline: none;
         border: 2px solid var(--text-color);
+      }
+    </style>
+    <style is:global>
+      :root {
+        --background-color: black;
+        --text-color: #fff;
+      }
+      [data-theme="alu"] {
+        --background-color: #211d29;
+        --background-highlight: #35314a;
+        --accent-color: #624978;
+        --accent-color-brighter: #543d65;
+        --text-color: #fff;
+        --text-color-accent: #c7c7c7;
+        --dropdown-background-color: #262539;
+      }
+      [data-theme="mocha"] {
+        /* Catppucin Mocha theme */
+        --background-color: #1e1e2e;
+        --background-highlight: #45475a;
+        --accent-color: #181825;
+        --accent-color-brighter: #242539;
+        --text-color: #cdd6f4;
+        --text-color-accent: #bac2de;
+        --dropdown-background-color: #32324e;
+      }
+
+      [data-theme="macchiato"] {
+        /* Catppuccin Macchiato Theme */
+        --background-color: #24273a;
+        --background-highlight: #494d64;
+        --accent-color: #1e2030;
+        --accent-color-brighter: #2a2d42;
+        --text-color: #cad3f5;
+        --text-color-accent: #b8c0e0;
+        --dropdown-background-color: #323550;
+      }
+
+      [data-theme="rose_pine"] {
+        /* Rosé Pine Theme */
+        --background-color: #191724;
+        --background-highlight: #1f1d2e;
+        --accent-color: #26233a;
+        --accent-color-brighter: #2e2b4a;
+        --text-color: #e0def4;
+        --text-color-accent: #c7c5e0;
+        --dropdown-background-color: #1f1d2e;
       }
     </style>
   </body>
